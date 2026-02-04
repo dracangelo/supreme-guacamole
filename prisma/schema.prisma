@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  role           String   @default("user") // "admin" or "user"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tasks          Task[]
+  activityLogs   ActivityLog[]
+  organizations  OrganizationUser[]
+  comments       TaskComment[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  ownerId     String
+  boardLimit  Int      @default(7)
+  boards      Board[]
+  users       OrganizationUser[]
+  activityLogs ActivityLog[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Column {
+  id             String   @id @default(cuid())
+  title          String
+  position       Int
+  boardId        String
+  board          Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  columnId    String
+  position    Int
+  status      String   @default("todo") // "todo", "in-progress", "done", "cancelled", "paused", "overdue"
+  assigneeId  String?
+  column      Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignee    User?    @relation(fields: [assigneeId], references: [id])
+  dueDate     DateTime?
+  boardId     String?
+  board       Board?    @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  activityLogs ActivityLog[]
+  comments    TaskComment[]
+  attachments TaskAttachment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Board {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description     String?
+  organizationId  String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  columns        Column[]
+  tasks          Task[]
+  activityLogs    ActivityLog[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String   // "created", "updated", "deleted", "moved", "commented"
+  entityType   String   // "board", "column", "task", "organization", "user"
+  entityId    String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  organizationId String?
+  boardId     String?
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  taskId      String?
+  board       Board?    @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  details     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OrganizationUser {
+  id             String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role            String   @default("member") // "owner", "admin", "member"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskAttachment {
+  id        String   @id @default(cuid())
+  filename  String
+  fileUrl   String
+  fileSize  Int?
+  mimeType  String?
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
