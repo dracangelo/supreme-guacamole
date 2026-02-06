@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, closestCorners } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { 
+import {
   Plus, MoreHorizontal, LayoutGrid, Users, LogOut, UserPlus, Palette, Edit2, Trash2, PlusCircle,
   Kanban, Sparkles, ChevronDown, Settings, Search, Filter, Star, Archive, Calendar, CheckCircle2,
   CheckCircle, X, Info, AlertTriangle, Moon, Sun, LogIn, Building2, Plus as PlusIcon,
@@ -169,9 +169,9 @@ function SortableColumn({ column, tasks, onEditTask, onDeleteTask, onDeleteColum
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-8 w-8 rounded-full hover:bg-primary/20 hover:shadow-md hover:scale-110 transition-all duration-300"
                 >
                   <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -269,9 +269,9 @@ function SortableTask({ task, onEdit, onDelete }: SortableTaskProps) {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-7 w-7 rounded-full hover:bg-primary/20 hover:shadow-md hover:scale-110 transition-all duration-300 flex-shrink-0"
                 >
                   <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
@@ -353,6 +353,11 @@ export default function TrelloPage() {
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Task Comments interface
   interface TaskComment {
@@ -566,6 +571,39 @@ export default function TrelloPage() {
     }
   }, [currentBoard]);
 
+  const onEditTask = async (task: Task) => {
+    setEditingTask(task);
+    setEditTaskTitle(task.title);
+    setEditTaskDescription(task.description);
+    setEditTaskStatus(task.status as TaskStatus);
+    setEditTaskDueDate(task.dueDate || '');
+    setEditTaskAssigneeId(task.assigneeId || '');
+    setEditTaskDialogOpen(true);
+    setComments([]);
+    setNewComment('');
+    await loadComments(task.id);
+  };
+
+  const onEditColumn = (column: Column) => {
+    setEditingColumn(column);
+    setEditColumnTitle(column.title);
+    setEditColumnDialogOpen(true);
+  };
+
+  const onDeleteTask = async (taskId: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      await fetch(`/api/trello/tasks/${taskId}`, { method: 'DELETE' });
+      loadData();
+    }
+  };
+
+  const onDeleteColumn = async (columnId: string) => {
+    if (window.confirm('Are you sure you want to delete this column and all its tasks?')) {
+      await fetch(`/api/trello/columns/${columnId}`, { method: 'DELETE' });
+      loadData();
+    }
+  };
+
   const onAddTask = (columnId: string) => {
     setSelectedColumnId(columnId);
     setAddTaskDialogOpen(true);
@@ -581,8 +619,8 @@ export default function TrelloPage() {
 
       // Only trigger when no dialogs are open
       if (editTaskDialogOpen || editColumnDialogOpen || addTaskDialogOpen ||
-          addColumnDialogOpen || addUserDialogOpen || addBoardDialogOpen ||
-          addOrgDialogOpen || userManagementDialogOpen || loginDialogOpen) {
+        addColumnDialogOpen || addUserDialogOpen || addBoardDialogOpen ||
+        addOrgDialogOpen || userManagementDialogOpen || loginDialogOpen) {
         return;
       }
 
@@ -612,7 +650,6 @@ export default function TrelloPage() {
     addOrgDialogOpen, userManagementDialogOpen, loginDialogOpen,
     columns, onAddTask
   ]);
-
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id as string);
@@ -910,44 +947,6 @@ export default function TrelloPage() {
     }
   };
 
-  const onEditTask = async (task: Task) => {
-    setEditingTask(task);
-    setEditTaskTitle(task.title);
-    setEditTaskDescription(task.description);
-    setEditTaskStatus(task.status as TaskStatus);
-    setEditTaskDueDate(task.dueDate || '');
-    setEditTaskAssigneeId(task.assigneeId || '');
-    setEditTaskDialogOpen(true);
-    setComments([]);
-    setNewComment('');
-    await loadComments(task.id);
-  };
-
-  const onEditColumn = (column: Column) => {
-    setEditingColumn(column);
-    setEditColumnTitle(column.title);
-    setEditColumnDialogOpen(true);
-  };
-
-  const onDeleteTask = async (taskId: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      await fetch(`/api/trello/tasks/${taskId}`, { method: 'DELETE' });
-      loadData();
-    }
-  };
-
-  const onDeleteColumn = async (columnId: string) => {
-    if (window.confirm('Are you sure you want to delete this column and all its tasks?')) {
-      await fetch(`/api/trello/columns/${columnId}`, { method: 'DELETE' });
-      loadData();
-    }
-  };
-
-  const onAddTask = (columnId: string) => {
-    setSelectedColumnId(columnId);
-    setAddTaskDialogOpen(true);
-  };
-
   const filteredTasks = tasks.filter(task => {
     if (filterStatus === 'all') return true;
     return task.status === filterStatus;
@@ -958,7 +957,7 @@ export default function TrelloPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-900/20 animate-gradient-bg">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {isMounted && [...Array(20)].map((_, i) => (
               <div
                 key={i}
                 className="absolute w-64 h-64 rounded-full bg-primary/10"
@@ -1049,125 +1048,125 @@ export default function TrelloPage() {
                   Manage Users
                 </Button>
               )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Workspace Selector */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:shadow-sm hover:scale-105 transition-all duration-300">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    {currentOrganization?.name || 'Select Workspace'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72">
-                  {organizations.map((org: any) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      onClick={() => {
-                        setCurrentOrganization(org);
-                        setCurrentBoard(null);
-                      }}
-                      className="group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="group-hover:text-primary group-hover:font-semibold transition-colors">{org.name}</span>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuItem onClick={() => setAddOrgDialogOpen(true)} className="group border-t">
-                    <div className="flex items-center gap-2">
-                      <PlusIcon className="h-4 w-4 text-muted-foreground group-hover:text-green-600 transition-colors" />
-                      <span className="group-hover:text-green-600 group-hover:font-semibold transition-colors">New Workspace</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Board Selector */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:shadow-sm hover:scale-105 transition-all duration-300">
-                    <LayoutGrid className="h-4 w-4 mr-2" />
-                    {currentBoard?.name || 'Select Board'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72">
-                  {boards.map((board: any) => (
-                    <DropdownMenuItem
-                      key={board.id}
-                      onClick={() => setCurrentBoard(board)}
-                      className="group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <LayoutGrid className="h-4 w-4 text-muted-foreground group-hover:text-purple-600 transition-colors" />
-                        <div className="flex-1">
-                          <div className="text-sm group-hover:text-purple-600 group-hover:font-semibold transition-colors">{board.name}</div>
-                          {board.description && (
-                            <div className="text-xs text-muted-foreground">{board.description}</div>
-                          )}
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                  {boards.length < (currentOrganization?.boardLimit || 7) && (
-                    <DropdownMenuItem onClick={() => setAddBoardDialogOpen(true)} className="group border-t">
-                      <div className="flex items-center gap-2">
-                        <PlusIcon className="h-4 w-4 text-muted-foreground group-hover:text-purple-600 transition-colors" />
-                        <span className="group-hover:text-purple-600 group-hover:font-semibold transition-colors">New Board</span>
-                      </div>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="hover:bg-accent/50 hover:shadow-sm hover:scale-105 transition-all duration-300" title="Keyboard shortcuts">
-                    <span className="sr-only">Keyboard shortcuts</span>
-                    <span className="text-xs font-mono">⌨️</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <div className="p-3 space-y-2">
-                    <h4 className="text-sm font-semibold mb-2">Keyboard Shortcuts</h4>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">New Column</span>
-                        <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">N</kbd>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">New Card</span>
-                        <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">C</kbd>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Help</span>
-                        <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">?</kbd>
-                      </div>
-                    </div>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="hover:bg-accent/50 hover:shadow-sm hover:scale-105 transition-all duration-300">
-                      {currentUser.name || currentUser.email}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleLogout} className="group">
-                      <div className="flex items-center gap-2">
-                        <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-red-500 transition-colors" />
-                        <span className="group-hover:text-red-500 group-hover:font-semibold transition-colors">Logout</span>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            {/* Workspace Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:shadow-sm hover:scale-105 transition-all duration-300">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  {currentOrganization?.name || 'Select Workspace'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                {organizations.map((org: any) => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    onClick={() => {
+                      setCurrentOrganization(org);
+                      setCurrentBoard(null);
+                    }}
+                    className="group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <span className="group-hover:text-primary group-hover:font-semibold transition-colors">{org.name}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem onClick={() => setAddOrgDialogOpen(true)} className="group border-t">
+                  <div className="flex items-center gap-2">
+                    <PlusIcon className="h-4 w-4 text-muted-foreground group-hover:text-green-600 transition-colors" />
+                    <span className="group-hover:text-green-600 group-hover:font-semibold transition-colors">New Workspace</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Board Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:shadow-sm hover:scale-105 transition-all duration-300">
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  {currentBoard?.name || 'Select Board'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                {boards.map((board: any) => (
+                  <DropdownMenuItem
+                    key={board.id}
+                    onClick={() => setCurrentBoard(board)}
+                    className="group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid className="h-4 w-4 text-muted-foreground group-hover:text-purple-600 transition-colors" />
+                      <div className="flex-1">
+                        <div className="text-sm group-hover:text-purple-600 group-hover:font-semibold transition-colors">{board.name}</div>
+                        {board.description && (
+                          <div className="text-xs text-muted-foreground">{board.description}</div>
+                        )}
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                {boards.length < (currentOrganization?.boardLimit || 7) && (
+                  <DropdownMenuItem onClick={() => setAddBoardDialogOpen(true)} className="group border-t">
+                    <div className="flex items-center gap-2">
+                      <PlusIcon className="h-4 w-4 text-muted-foreground group-hover:text-purple-600 transition-colors" />
+                      <span className="group-hover:text-purple-600 group-hover:font-semibold transition-colors">New Board</span>
+                    </div>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="hover:bg-accent/50 hover:shadow-sm hover:scale-105 transition-all duration-300" title="Keyboard shortcuts">
+                  <span className="sr-only">Keyboard shortcuts</span>
+                  <span className="text-xs font-mono">⌨️</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="p-3 space-y-2">
+                  <h4 className="text-sm font-semibold mb-2">Keyboard Shortcuts</h4>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">New Column</span>
+                      <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">N</kbd>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">New Card</span>
+                      <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">C</kbd>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Help</span>
+                      <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">?</kbd>
+                    </div>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="hover:bg-accent/50 hover:shadow-sm hover:scale-105 transition-all duration-300">
+                  {currentUser.name || currentUser.email}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout} className="group">
+                  <div className="flex items-center gap-2">
+                    <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-red-500 transition-colors" />
+                    <span className="group-hover:text-red-500 group-hover:font-semibold transition-colors">Logout</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 p-6 overflow-hidden">
@@ -1198,11 +1197,10 @@ export default function TrelloPage() {
                     <button
                       key={key}
                       onClick={() => setFilterStatus(key === filterStatus ? 'all' : key as TaskStatus)}
-                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                        filterStatus === 'all' || filterStatus === key
-                          ? `${color} text-white shadow-lg hover:shadow-md`
-                          : 'border-muted bg-white/50 hover:bg-white/80'
-                      }`}
+                      className={`px-4 py-2 rounded-lg border-2 transition-all ${filterStatus === 'all' || filterStatus === key
+                        ? `${color} text-white shadow-lg hover:shadow-md`
+                        : 'border-muted bg-white/50 hover:bg-white/80'
+                        }`}
                     >
                       {label}
                     </button>
@@ -1262,163 +1260,163 @@ export default function TrelloPage() {
           </div>
         </div>
 
-          <ScrollArea className="h-full">
-            {viewMode === 'board' ? (
-              <DndContext collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                {isLoading ? (
-                  <div className="flex gap-4 sm:gap-6 pb-4 overflow-x-auto">
-                    {[1, 2, 3].map((i) => (
-                      <ColumnSkeleton key={i} />
-                    ))}
-                  </div>
-                ) : columns.length === 0 ? (
-                  <div className="p-8 sm:p-12">
-                    <EmptyState
-                      icon={LayoutGrid}
-                      title="No columns yet"
-                      description="Create your first column to start organizing your tasks"
-                      action={
-                        <Button
-                          onClick={() => setAddColumnDialogOpen(true)}
-                          className="hover:shadow-lg hover:scale-105 transition-all duration-300"
-                        >
-                          <PlusCircle className="h-4 w-4 mr-2" />
-                          Add Column
-                        </Button>
-                      }
-                    />
-                  </div>
-                ) : filteredTasks.length === 0 ? (
-                  <div className="p-8 sm:p-12">
-                    <EmptyState
-                      icon={CheckCircle}
-                      title="No tasks to display"
-                      description="Try adjusting your filters or create some new tasks"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex gap-4 sm:gap-6 pb-4 overflow-x-auto min-w-max">
-                    <SortableContext items={columns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                      {columns.map((column) => (
-                        <SortableColumn
-                          key={column.id}
-                          column={column}
-                          tasks={filteredTasks}
-                          onEditTask={onEditTask}
-                          onDeleteTask={onDeleteTask}
-                          onDeleteColumn={onDeleteColumn}
-                          onEditColumn={onEditColumn}
-                          onAddTask={onAddTask}
-                        />
-                      ))}
-                    </SortableContext>
-                    <Card className="flex-shrink-0 w-72 sm:w-80 border-2 border-dashed bg-gradient-to-br from-primary/5 to-purple-500/10 hover:border-primary/30 hover:shadow-xl hover:scale-105 transition-all duration-300 group">
-                      <CardContent className="p-6 h-full flex items-center justify-center min-h-[180px] sm:min-h-[200px]">
-                        <Button
-                          variant="outline"
-                          className="w-full hover:bg-primary/10 hover:shadow-lg hover:scale-105 transition-all duration-300 group"
-                          onClick={() => setAddColumnDialogOpen(true)}
-                        >
-                          <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 group-hover:rotate-90 transition-transform duration-200" />
-                          <span className="group-hover:font-semibold transition-all">Add Column</span>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-              </DndContext>
-            ) : viewMode === 'calendar' ? (
-              <div className="p-4">
-                {/* Calendar Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigateMonth('prev')}
-                    className="hover:bg-primary/10 hover:shadow-md hover:scale-105 transition-all duration-200"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <h2 className="text-2xl font-bold">
-                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </h2>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigateMonth('next')}
-                    className="hover:bg-primary/10 hover:shadow-md hover:scale-105 transition-all duration-200"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2 mb-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="text-center text-sm font-semibold text-muted-foreground py-2">
-                      {day}
-                    </div>
+        <ScrollArea className="h-full">
+          {viewMode === 'board' ? (
+            <DndContext collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+              {isLoading ? (
+                <div className="flex gap-4 sm:gap-6 pb-4 overflow-x-auto">
+                  {[1, 2, 3].map((i) => (
+                    <ColumnSkeleton key={i} />
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-2">
-                  {getDaysInMonth(currentMonth).map((date, index) => (
-                    <div
-                      key={index}
-                      className={`
+              ) : columns.length === 0 ? (
+                <div className="p-8 sm:p-12">
+                  <EmptyState
+                    icon={LayoutGrid}
+                    title="No columns yet"
+                    description="Create your first column to start organizing your tasks"
+                    action={
+                      <Button
+                        onClick={() => setAddColumnDialogOpen(true)}
+                        className="hover:shadow-lg hover:scale-105 transition-all duration-300"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Add Column
+                      </Button>
+                    }
+                  />
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="p-8 sm:p-12">
+                  <EmptyState
+                    icon={CheckCircle}
+                    title="No tasks to display"
+                    description="Try adjusting your filters or create some new tasks"
+                  />
+                </div>
+              ) : (
+                <div className="flex gap-4 sm:gap-6 pb-4 overflow-x-auto min-w-max">
+                  <SortableContext items={columns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                    {columns.map((column) => (
+                      <SortableColumn
+                        key={column.id}
+                        column={column}
+                        tasks={filteredTasks}
+                        onEditTask={onEditTask}
+                        onDeleteTask={onDeleteTask}
+                        onDeleteColumn={onDeleteColumn}
+                        onEditColumn={onEditColumn}
+                        onAddTask={onAddTask}
+                      />
+                    ))}
+                  </SortableContext>
+                  <Card className="flex-shrink-0 w-72 sm:w-80 border-2 border-dashed bg-gradient-to-br from-primary/5 to-purple-500/10 hover:border-primary/30 hover:shadow-xl hover:scale-105 transition-all duration-300 group">
+                    <CardContent className="p-6 h-full flex items-center justify-center min-h-[180px] sm:min-h-[200px]">
+                      <Button
+                        variant="outline"
+                        className="w-full hover:bg-primary/10 hover:shadow-lg hover:scale-105 transition-all duration-300 group"
+                        onClick={() => setAddColumnDialogOpen(true)}
+                      >
+                        <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 group-hover:rotate-90 transition-transform duration-200" />
+                        <span className="group-hover:font-semibold transition-all">Add Column</span>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </DndContext>
+          ) : viewMode === 'calendar' ? (
+            <div className="p-4">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-6">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigateMonth('prev')}
+                  className="hover:bg-primary/10 hover:shadow-md hover:scale-105 transition-all duration-200"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h2 className="text-2xl font-bold">
+                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigateMonth('next')}
+                  className="hover:bg-primary/10 hover:shadow-md hover:scale-105 transition-all duration-200"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-2 mb-2">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="text-center text-sm font-semibold text-muted-foreground py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {getDaysInMonth(currentMonth).map((date, index) => (
+                  <div
+                    key={index}
+                    className={`
                         min-h-[120px] p-2 rounded-lg border-2 transition-all duration-200
                         ${date
-                          ? 'bg-gradient-to-br from-white to-white/50 hover:border-primary/50 hover:shadow-lg cursor-pointer'
-                          : 'bg-transparent border-transparent'
-                        }
+                        ? 'bg-gradient-to-br from-white to-white/50 hover:border-primary/50 hover:shadow-lg cursor-pointer'
+                        : 'bg-transparent border-transparent'
+                      }
                       `}
-                    >
-                      {date && (
-                        <>
-                          <div className="text-sm font-semibold text-muted-foreground mb-2">
-                            {date.getDate()}
-                          </div>
-                          <div className="space-y-1">
-                            {getTasksForDate(date).map(task => {
-                              const statusInfo = TASK_STATUS[task.status as TaskStatus] || TASK_STATUS.todo;
-                              return (
-                                <div
-                                  key={task.id}
-                                  onClick={() => onEditTask(task)}
-                                  className={`
+                  >
+                    {date && (
+                      <>
+                        <div className="text-sm font-semibold text-muted-foreground mb-2">
+                          {date.getDate()}
+                        </div>
+                        <div className="space-y-1">
+                          {getTasksForDate(date).map(task => {
+                            const statusInfo = TASK_STATUS[task.status as TaskStatus] || TASK_STATUS.todo;
+                            return (
+                              <div
+                                key={task.id}
+                                onClick={() => onEditTask(task)}
+                                className={`
                                     text-xs p-2 rounded-md cursor-pointer
                                     hover:shadow-md hover:scale-105 transition-all duration-200
                                     ${statusInfo.bgColor} ${statusInfo.textColor}
                                     border border-opacity-20 ${statusInfo.borderColor}
                                   `}
-                                >
-                                  <div className="font-medium truncate">{task.title}</div>
-                                  {task.description && (
-                                    <div className="text-[10px] opacity-70 truncate">
-                                      {task.description}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                              >
+                                <div className="font-medium truncate">{task.title}</div>
+                                {task.description && (
+                                  <div className="text-[10px] opacity-70 truncate">
+                                    {task.description}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <Clock className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">
-                    {viewMode === 'timeline' ? 'Timeline View' : 'List View'}
-                  </p>
-                  <p className="text-sm mt-2">Coming soon...</p>
-                </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center">
+                <Clock className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">
+                  {viewMode === 'timeline' ? 'Timeline View' : 'List View'}
+                </p>
+                <p className="text-sm mt-2">Coming soon...</p>
               </div>
-            )}
-          </ScrollArea>
+            </div>
+          )}
+        </ScrollArea>
       </main>
 
       <DragOverlay>
@@ -1465,9 +1463,9 @@ export default function TrelloPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setAddColumnDialogOpen(false)} 
+            <Button
+              variant="outline"
+              onClick={() => setAddColumnDialogOpen(false)}
               className="hover:bg-accent/50"
             >
               Cancel
@@ -1555,8 +1553,8 @@ export default function TrelloPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setAddTaskDialogOpen(false);
                 setNewTaskTitle('');
@@ -1740,8 +1738,8 @@ export default function TrelloPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setEditTaskDialogOpen(false);
                 setEditingTask(null);
@@ -1788,8 +1786,8 @@ export default function TrelloPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setEditColumnDialogOpen(false);
                 setEditingColumn(null);
@@ -1819,8 +1817,8 @@ export default function TrelloPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Button 
-              onClick={() => setAddUserDialogOpen(true)} 
+            <Button
+              onClick={() => setAddUserDialogOpen(true)}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 to-purple-700 hover:shadow-lg hover:scale-105 transition-all duration-300"
             >
               <UserPlus className="h-4 w-4 mr-2" />
@@ -2029,8 +2027,8 @@ export default function TrelloPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setAddUserDialogOpen(false);
                 setNewUserName('');
