@@ -155,7 +155,7 @@ function SortableColumn({ column, tasks, onEditTask, onDeleteTask, onDeleteColum
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex-shrink-0 w-72 sm:w-80">
-      <Card className="h-full bg-gradient-to-br from-secondary via-slate-100 to-secondary/50 hover:from-secondary/50 to-slate-100/80 shadow-xl backdrop-blur-sm transition-all duration-300">
+      <Card className="h-full bg-card/40 backdrop-blur-xl border-white/5 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 group/column">
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -245,7 +245,7 @@ function SortableTask({ task, onEdit, onDelete }: SortableTaskProps) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="group/task">
-      <Card className="cursor-grab active:cursor-grabbing hover:shadow-xl hover:scale-[1.02] hover:border-primary/40 bg-gradient-to-br from-card via-white/50 to-white/90 transition-all duration-300 shadow-sm backdrop-blur-sm">
+      <Card className="cursor-grab active:cursor-grabbing hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 bg-card/60 border-white/5 transition-all duration-500 shadow-sm backdrop-blur-md">
         <CardContent className="p-4">
           <div className={`flex items-start justify-between gap-3 transition-all duration-200 ${isDragging ? 'scale-105' : ''}`}>
             <div className="flex-1 min-w-0">
@@ -383,7 +383,7 @@ export default function TrelloPage() {
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: (Date | null)[] = [];
 
     // Add empty cells for days before the first of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
@@ -954,7 +954,13 @@ export default function TrelloPage() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-900/20 animate-gradient-bg">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 animate-gradient-bg overflow-hidden relative">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
+        </div>
+
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {isMounted && [...Array(20)].map((_, i) => (
@@ -971,45 +977,47 @@ export default function TrelloPage() {
             ))}
           </div>
         </div>
-        <div className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border-0">
-          <CardContent className="p-8 space-y-6 text-center">
-            <div className="flex justify-center mb-6">
-              <Kanban className="h-20 w-20 text-primary" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent bg-clip-text">
-                Trello
-                <span className="text-white">Clone</span>
-              </h1>
-              <p className="text-muted-foreground">Sign in to continue</p>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email" className="text-base font-semibold">Your Name</Label>
-                <Input
-                  id="email"
-                  placeholder="Enter your name"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  className="h-12 text-base"
-                />
+        <div className="relative z-10 w-full max-w-md bg-card/60 backdrop-blur-2xl rounded-3xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] p-1 border border-primary/10 transition-all duration-500 hover:shadow-primary/5">
+          <div className="bg-card/40 rounded-[1.4rem] p-8 border border-white/5">
+            <CardContent className="p-8 space-y-6 text-center">
+              <div className="flex justify-center mb-6">
+                <Kanban className="h-20 w-20 text-primary" />
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent bg-clip-text">
+                  Trello
+                  <span className="text-white">Clone</span>
+                </h1>
+                <p className="text-muted-foreground">Sign in to continue</p>
               </div>
-              <div>
-                <Label htmlFor="email" className="text-base font-semibold">Your Email</Label>
-                <Input
-                  id="email"
-                  placeholder="Enter your email"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  className="h-12 text-base"
-                />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="email" className="text-base font-semibold">Your Name</Label>
+                  <Input
+                    id="email"
+                    placeholder="Enter your name"
+                    value={newUserName}
+                    onChange={(e) => setNewUserName(e.target.value)}
+                    className="h-12 text-base"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email" className="text-base font-semibold">Your Email</Label>
+                  <Input
+                    id="email"
+                    placeholder="Enter your email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    className="h-12 text-base"
+                  />
+                </div>
+                <Button
+                  onClick={handleLogin}
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 to-purple-700 hover:shadow-lg hover:scale-105 transition-all duration-300"
+                >
+                  Sign In
+                </Button>
               </div>
-              <Button
-                onClick={handleLogin}
-                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 to-purple-700 hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                Sign In
-              </Button>
-            </div>
-          </CardContent>
+            </CardContent>
+          </div>
         </div>
       </div>
     );
@@ -1020,20 +1028,22 @@ export default function TrelloPage() {
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="border-0 bg-white/90 backdrop-blur-xl shadow-xl sticky top-0 z-50">
+    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30">
+      <header className="border-b border-border bg-background/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm transition-all duration-300">
         <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <Kanban className="h-6 w-6 sm:h-7 sm:w-7 text-primary animate-spin-slow" />
+              <div className="flex items-center gap-2 group cursor-pointer">
+                <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                  <Kanban className="h-6 w-6 sm:h-7 sm:w-7 text-primary animate-spin-slow" />
+                </div>
                 <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
-                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent bg-clip-text">
+                  <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     Trello
-                    <span className="text-white">Clone</span>
+                    <span className="text-foreground/90">Clone</span>
                   </span>
                 </h1>
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 animate-pulse" />
               </div>
               <div className="hidden sm:flex flex-col">
                 <p className="text-sm text-muted-foreground font-medium">{currentUser?.name || 'Welcome'}</p>
@@ -1310,7 +1320,7 @@ export default function TrelloPage() {
                       />
                     ))}
                   </SortableContext>
-                  <Card className="flex-shrink-0 w-72 sm:w-80 border-2 border-dashed bg-gradient-to-br from-primary/5 to-purple-500/10 hover:border-primary/30 hover:shadow-xl hover:scale-105 transition-all duration-300 group">
+                  <Card className="flex-shrink-0 w-72 sm:w-80 border-2 border-dashed border-white/10 bg-primary/5 hover:border-primary/40 hover:bg-primary/10 hover:shadow-2xl hover:scale-105 transition-all duration-500 group">
                     <CardContent className="p-6 h-full flex items-center justify-center min-h-[180px] sm:min-h-[200px]">
                       <Button
                         variant="outline"
