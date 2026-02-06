@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logActivity, ACTIVITY_TYPES, ENTITY_TYPES } from '@/lib/activity-logger';
+import { slugify } from '@/lib/utils';
 
 export async function GET() {
   try {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     const organization = await db.organization.create({
       data: {
         name,
+        slug: `${slugify(name)}-${Math.random().toString(36).substring(2, 7)}`,
         description: description || null,
         ownerId,
         boardLimit: 7,
